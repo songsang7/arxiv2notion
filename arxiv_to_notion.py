@@ -94,7 +94,7 @@ def fetch_arxiv_papers():
             # ArXiv ID (e.g., http://arxiv.org/abs/2401.12345)
             paper_abs_url = entry.id.text.strip()
             # PDF URL (e.g., http://arxiv.org/pdf/2401.12345.pdf)
-            paper_pdf_url = paper_abs_url.replace('abs', 'pdf') + '.pdf'
+            paper_pdf_url = paper_abs_url.replace('abs', 'pdf')
 
             if paper_abs_url not in unique_papers:
                 # ✨ 제목과 초록의 연속 공백 및 줄바꿈을 하나의 공백으로 변경

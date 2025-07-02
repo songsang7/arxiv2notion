@@ -26,7 +26,7 @@ KEYWORDS = [
   ]
 ALLOWED_SUBJECTS = {"cs.CL", "cs.AI", "cs.LG"}
 MY_RESEARCH_AREA = "My research focuses on developing virtual agents that understand user situations by jointly reasoning over user speech and ambient sounds as multimodal input, with a particular emphasis on generating speech with diverse styles using audio language models."
-LOOKBACK_DAYS = 30
+LOOKBACK_DAYS = 60
 
 # Basic check to ensure secrets were loaded
 if not all([NOTION_TOKEN, DATABASE_ID, GOOGLE_API_KEY]):

@@ -200,7 +200,11 @@ def analyze_paper_with_gemini(paper):
                     
                     pattern = f"\[{current_tag}\](.*?)"
                     if next_tag:
-                        pattern += f"(?=\[{next_tag}\])"
+                        # 다음 태그가 있으면, non-greedy 방식으로 다음 태그 직전까지 파싱
+                        pattern = f"\[{current_tag}\](.*?)(?=\[{next_tag}\])"
+                    else:
+                        # 다음 태그가 없는 마지막 태그이면, greedy 방식으로 문자열 끝까지 파싱
+                        pattern = f"\[{current_tag}\](.*)"
                     
                     match = re.search(pattern, summary_part, re.DOTALL | re.IGNORECASE)
                     

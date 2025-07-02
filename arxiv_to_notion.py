@@ -172,7 +172,7 @@ def analyze_paper_with_gemini(paper):
 
         try:
             # API 호출 (PDF 데이터와 프롬프트를 함께 전송)
-            response = client.model.generate_content(
+            response = client.models.generate_content(
                 model = model_to_use,
                 contents=[
                     types.Part.from_data(

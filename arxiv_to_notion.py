@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from google import genai
 import time
-
+from google.genai import types
+import httpx
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 DATABASE_ID = os.environ.get("DATABASE_ID")
@@ -90,15 +91,20 @@ def fetch_arxiv_papers():
         soup = BeautifulSoup(response.content, 'xml')
         entries = soup.find_all('entry')
         for entry in entries:
-            paper_id = entry.id.text.strip()
-            if paper_id not in unique_papers:
+            # ArXiv ID (e.g., http://arxiv.org/abs/2401.12345)
+            paper_abs_url = entry.id.text.strip()
+            # PDF URL (e.g., http://arxiv.org/pdf/2401.12345.pdf)
+            paper_pdf_url = paper_abs_url.replace('abs', 'pdf') + '.pdf'
+
+            if paper_abs_url not in unique_papers:
                 # ✨ 제목과 초록의 연속 공백 및 줄바꿈을 하나의 공백으로 변경
                 clean_title = ' '.join(entry.title.text.strip().split())
                 clean_abstract = ' '.join(entry.summary.text.strip().split())
 
-                unique_papers[paper_id] = {
+                unique_papers[paper_abs_url] = {
                     'title': clean_title,
-                    'link': paper_id,
+                    'link': paper_abs_url, # Abstract page URL
+                    'pdf_link': paper_pdf_url, # PDF URL
                     'updated_str': entry.updated.text,
                     'abstract': clean_abstract, # ✨ 원본 초록 (요약 전)
                     'author': entry.author.find('name').text.strip() if entry.author else 'arXiv',
@@ -118,37 +124,64 @@ def fetch_arxiv_papers():
 
 def analyze_paper_with_gemini(paper):
     """
-    Gemini를 사용하여 논문의 관련도를 평가하고 요약합니다.
+    Gemini를 사용하여 PDF 논문을 분석하고, 한국어 요약과 관련도를 반환합니다.
     API 쿼터 소진 시, 자동으로 다음 모델로 전환하여 재시도합니다.
     """
-    global current_model_index # 전역 변수인 모델 인덱스를 수정하기 위해 선언
+    global current_model_index
 
+    # --- PDF 다운로드 ---
+    pdf_url = paper['pdf_link']
+    try:
+        print(f"    - PDF 다운로드 중: {pdf_url}")
+        doc_response = httpx.get(pdf_url, timeout=30)
+        doc_response.raise_for_status()
+        doc_data = doc_response.content
+        print("    - PDF 다운로드 완료.")
+    except httpx.RequestError as e:
+        print(f"    ❌ PDF 다운로드 실패: {e}")
+        return None, None
+    except httpx.HTTPStatusError as e:
+        print(f"    ❌ PDF를 찾을 수 없거나 서버 오류: {e}")
+        return None, None
+
+    # --- Gemini 프롬프트 ---
     prompt = f"""
-You are an AI assistant for a researcher. Your task is to analyze a paper and provide two outputs: a relevance decision and a concise summary.
+    당신은 연구원을 돕는 AI 조수입니다. 당신의 임무는 첨부된 PDF 논문을 분석하여 두 가지 결과물을 제공하는 것입니다: 한국어 요약, 그리고 나의 연구 분야와의 관련성 판단.
 
-**My Research Area:**
-"{MY_RESEARCH_AREA}"
+    **나의 연구 분야:**
+    "{MY_RESEARCH_AREA}"
 
-**Paper Title:** {paper['title']}
-**Paper Abstract:** {paper['abstract']}
+    **지시사항:**
+    1.  **논문 요약 (한국어):** 논문의 핵심 내용을 한국어로 요약해 주세요. 요약에는 다음 내용이 반드시 포함되어야 합니다:
+        * **Motivation:** 이 연구가 해결하고자 하는 문제는 무엇이며, 왜 중요한가?
+        * **Proposed Method:** 문제를 해결하기 위해 저자들이 제안하는 새로운 방법론이나 접근 방식은 무엇인가? 기존 방법들과의 차이점은 무엇인가?
+        * **Results:** 제안된 방법의 효과를 보여주는 주요 결과는 무엇인가?
+        * **작성 스타일:** 불필요한 이모티콘이나 특수문자 없이, 완전한 문장으로 구성된 줄글 형태로 작성해 주세요.
 
-**Instructions:**
-1.  **Analyze Relevance:** First, evaluate if the paper's contribution is directly relevant to my research area.
-2.  **Summarize:** Second, summarize the abstract into exactly two clear and informative sentences.
-3.  **Format Output:** You MUST provide your response in the following format, using "|||" as a separator. Do not include any other text, explanations, or introductory phrases.
+    2.  **관련성 판단:** 논문의 기여가 나의 연구 분야에 직접적으로 관련이 있는지 평가해 주세요.
 
-**Output Format:**
-[Your two-sentence summary here.]||| [Yes. or No.]
-"""
+    3.  **출력 형식:** 반드시 아래 형식을 정확히 지켜서 응답해야 하며, "|||"를 구분자로 사용해야 합니다. 다른 추가적인 설명이나 인사말을 포함하지 마세요.
 
-    # 사용 가능한 모델이 남아있는 동안 재시도
+    **출력 형식:**
+    [여기에 한국어 요약을 작성하세요.]|||[Yes. 또는 No.]
+    """
+
     while current_model_index < len(MODEL_LIST):
         model_to_use = MODEL_LIST[current_model_index]
         print(f"    - Gemini 분석 시도 (모델: {model_to_use})")
 
         try:
-            # API 호출
-            response = client.generate_content(model=model_to_use, contents=prompt)
+            # API 호출 (PDF 데이터와 프롬프트를 함께 전송)
+            response = client.model.generate_content(
+                model = model_to_use,
+                contents=[
+                    types.Part.from_data(
+                        data=doc_data,
+                        mime_type='application/pdf',
+                    ),
+                    prompt
+                ]
+            )
 
             # 응답 처리
             if response.text and '|||' in response.text:
@@ -161,24 +194,20 @@ You are an AI assistant for a researcher. Your task is to analyze a paper and pr
                     elif "no" in answer_part:
                         return "Unrelated", summary
 
-            # 예상치 못한 형식의 응답일 경우
             print(f"    ⚠️ Gemini가 예상치 못한 형식으로 답변: {response.text}...")
             return None, None
 
         except Exception as e:
             error_message = str(e).lower()
-            # 쿼터 소진 에러인지 확인
-            if "resource_exhausted" in error_message or "exceeded your current quota" in error_message:
+            if "resource_exhausted" in error_message or "quota" in error_message:
                 print(f"    ⚠️ 모델 '{model_to_use}'의 API 쿼터 소진. 다음 모델로 전환합니다.")
-                current_model_index += 1 # 다음 모델을 사용하기 위해 인덱스 증가
-                time.sleep(2) # 잠시 대기 후 다음 모델로 재시도
-                continue # while 루프의 다음 순회로 넘어감
+                current_model_index += 1
+                time.sleep(2)
+                continue
             else:
-                # 쿼터 소진이 아닌 다른 에러일 경우
                 print(f"    ❌ Gemini API 호출 중 예상치 못한 오류 발생: {e}")
-                return None, None # 분석 중단
+                return None, None
 
-    # 모든 모델의 쿼터를 소진한 경우
     print("    ❌ 사용 가능한 모든 Gemini 모델의 쿼터를 소진했습니다. 분석을 중단합니다.")
     return None, None
 

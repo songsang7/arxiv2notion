@@ -146,24 +146,28 @@ def analyze_paper_with_gemini(paper):
 
     # --- Gemini 프롬프트 ---
     prompt = f"""
-    당신은 연구원을 돕는 AI 조수입니다. 당신의 임무는 첨부된 PDF 논문을 분석하여 두 가지 결과물을 제공하는 것입니다: 한국어 요약, 그리고 나의 연구 분야와의 관련성 판단.
-
-    **나의 연구 분야:**
+    You are an AI assistant helping a researcher. Your task is to analyze the attached PDF paper and provide two outputs: an English summary in five paragraphs, and an assessment of its relevance to the researcher’s field.
+    
+    **My Research Area:**
     "{MY_RESEARCH_AREA}"
-
-    **지시사항:**
-    1.  **논문 요약 (한국어):** 논문의 핵심 내용을 한국어로 요약해 주세요. 요약에는 다음 내용이 반드시 포함되어야 합니다:
-        * **Motivation:** 이 연구가 해결하고자 하는 문제는 무엇이며, 왜 중요한가?
-        * **Proposed Method:** 문제를 해결하기 위해 저자들이 제안하는 새로운 방법론이나 접근 방식은 무엇인가? 기존 방법들과의 차이점은 무엇인가?
-        * **Results:** 제안된 방법의 효과를 보여주는 주요 결과는 무엇인가?
-        * **작성 스타일:** 불필요한 이모티콘이나 특수문자 없이, 완전한 문장으로 구성된 줄글 형태로 작성해 주세요.
-
-    2.  **관련성 판단:** 논문의 기여가 나의 연구 분야에 직접적으로 관련이 있는지 평가해 주세요.
-
-    3.  **출력 형식:** 반드시 아래 형식을 정확히 지켜서 응답해야 하며, "|||"를 구분자로 사용해야 합니다. 다른 추가적인 설명이나 인사말을 포함하지 마세요.
-
-    **출력 형식:**
-    [여기에 한국어 요약을 작성하세요.]|||[Yes. 또는 No.]
+    
+    **Instructions:**
+    
+    1. **Paper Summary (English):** Please summarize the paper in five clear and well-structured paragraphs, covering the following aspects:
+        * **Motivation:** What problem does this research aim to solve, and why is it important?
+        * **Differences from Prior Work:** How is this work different from or improving upon previous approaches?
+        * **Contributions and Novelty:** What are the main contributions and novel aspects of this paper?
+        * **Proposed Method:** What method or approach do the authors propose?
+        * **Results:** What are the key results that demonstrate the effectiveness of the proposed method?
+    
+        The summary must be written in full sentences and academic English, without any emojis, bullet points, or informal language.
+    
+    2. **Relevance Assessment:** Please determine whether the paper’s contributions are directly relevant to my research area.
+    
+    3. **Output Format:** You must follow the exact format below using "|||" as a delimiter. Do not include any additional commentary or greetings.
+    
+    **Output Format:**
+    [Insert the English summary here.]|||[Yes. or No.]
     """
 
     while current_model_index < len(MODEL_LIST):

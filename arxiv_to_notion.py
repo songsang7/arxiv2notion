@@ -177,13 +177,12 @@ def analyze_paper_with_gemini(paper):
         model_to_use = MODEL_LIST[current_model_index]
         print(f"  - Gemini 분석 시도 (모델: {model_to_use})")
         
-        generation_config = genai.types.GenerationConfig(temperature=0) # 일관된 출력을 위해 temperature 0으로 설정
-        model = genai.GenerativeModel(model_to_use)
 
         try:
-            response = model.generate_content(
+            response = client.models.generate_content(
+                model=model_to_use,
                 contents=[
-                    types.Part.from_data(data=doc_data, mime_type='application/pdf'),
+                    types.Part.from_types(data=doc_data, mime_type='application/pdf'),
                     prompt
                 ],
                 generation_config=generation_config

@@ -160,8 +160,6 @@ def analyze_paper_with_gemini(paper):
         * **Proposed Method:** What method or approach do the authors propose?
         * **Results:** What are the key results that demonstrate the effectiveness of the proposed method?
     
-        The summary must be written in full sentences and academic English, without any emojis, bullet points, or informal language.
-    
     2. **Relevance Assessment:** Please determine whether the paper’s contributions are directly relevant to my research area.
     
     3. **Output Format:** You must follow the exact format below using "|||" as a delimiter. Do not include any additional commentary or greetings.

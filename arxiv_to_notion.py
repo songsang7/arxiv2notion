@@ -7,6 +7,7 @@ from google import genai
 import time
 from google.genai import types
 import httpx
+import re
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 DATABASE_ID = os.environ.get("DATABASE_ID")

@@ -79,6 +79,6 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 ## 📅 Scheduling
 
 - Default: **Every day at 09:00 AM KST**
-- To change the schedule, edit the cron expression in `.github/workflows/arxiv.yml`.
+- To change the schedule, edit the cron expression in `.github/workflows/main.yml`.
 
 ---

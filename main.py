@@ -1,0 +1,285 @@
+import os
+import json
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+from google import genai
+import time
+
+
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+DATABASE_ID = os.environ.get("DATABASE_ID")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+
+# ✅ Hard-code non-secret configurations directly in the script
+KEYWORDS = [
+    "audio language model",
+    "speech language model",
+    "speech style",
+    "spoken language model",
+    "speech to speech",
+    "audio to speech",
+    "Omni",
+    "voice assistant"
+  ]
+ALLOWED_SUBJECTS = {"cs.CL", "cs.AI", "cs.LG"}
+MY_RESEARCH_AREA = "My research focuses on developing virtual agents that understand user situations by jointly reasoning over user speech and ambient sounds as multimodal input, with a particular emphasis on generating speech with diverse styles using audio language models."
+LOOKBACK_DAYS = 3
+
+# Basic check to ensure secrets were loaded
+if not all([NOTION_TOKEN, DATABASE_ID, GOOGLE_API_KEY]):
+    raise ValueError("❌ One or more secret environment variables are not set. Please check your GitHub repository secrets.")
+
+MODEL_LIST = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-lite-preview-06-17"]
+
+current_model_index = 0 # 사용할 모델을 가리키는 인덱스
+
+# ✅ 날짜 계산도 config 기반으로
+today = datetime.today()
+yesterday = today - timedelta(days=LOOKBACK_DAYS)
+
+# ✅ Gemini client 설정
+client = genai.Client(api_key=GOOGLE_API_KEY)
+
+def fetch_existing_titles():
+    """Notion 데이터베이스에서 기존 논문 제목들을 가져옵니다."""
+    url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json"
+    }
+    titles = set()
+    has_more = True
+    next_cursor = None
+    while has_more:
+        data = {"start_cursor": next_cursor} if next_cursor else {}
+        try:
+            res = requests.post(url, headers=headers, json=data, timeout=10)
+            res.raise_for_status()
+            results = res.json()
+            for page in results["results"]:
+                try:
+                    # ✨ 공백 정규화 추가
+                    title = ' '.join(page["properties"]["Paper"]["title"][0]["text"]["content"].split())
+                    titles.add(title)
+                except (KeyError, IndexError):
+                    continue
+            has_more = results.get("has_more", False)
+            next_cursor = results.get("next_cursor")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Notion 제목 조회 중 오류 발생: {e}")
+            break
+    return titles
+
+def fetch_arxiv_papers():
+    """키워드를 기반으로 arXiv에서 논문을 검색하고 날짜와 카테고리로 필터링합니다."""
+    base_url = "http://export.arxiv.org/api/query?"
+    unique_papers = {}
+    print("⬇️  키워드 기반 arXiv 논문 다운로드 시작...")
+    for keyword in set(KEYWORDS):
+        print(f"🔎 키워드 검색 중: \"{keyword}\"")
+        search_query = f'ti:"{keyword}" OR abs:"{keyword}"'
+        params = f"search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results=50"
+        try:
+            response = requests.get(base_url + params, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"❌ \"{keyword}\" 검색 중 arXiv API 오류: {e}")
+            continue
+        soup = BeautifulSoup(response.content, 'xml')
+        entries = soup.find_all('entry')
+        for entry in entries:
+            paper_id = entry.id.text.strip()
+            if paper_id not in unique_papers:
+                # ✨ 제목과 초록의 연속 공백 및 줄바꿈을 하나의 공백으로 변경
+                clean_title = ' '.join(entry.title.text.strip().split())
+                clean_abstract = ' '.join(entry.summary.text.strip().split())
+
+                unique_papers[paper_id] = {
+                    'title': clean_title,
+                    'link': paper_id,
+                    'updated_str': entry.updated.text,
+                    'abstract': clean_abstract, # ✨ 원본 초록 (요약 전)
+                    'author': entry.author.find('name').text.strip() if entry.author else 'arXiv',
+                    'categories': [cat['term'] for cat in entry.find_all('category')]
+                }
+        time.sleep(1)
+    print(f"👍 총 {len(unique_papers)}개의 고유 논문 발견. 필터링 시작...")
+    filtered_papers = []
+    for paper in unique_papers.values():
+        updated_date = datetime.strptime(paper['updated_str'], "%Y-%m-%dT%H:%M:%SZ").date()
+        if not (yesterday.date() <= updated_date <= today.date()):
+            continue
+        if not any(subject in paper['categories'] for subject in ALLOWED_SUBJECTS):
+            continue
+        filtered_papers.append(paper)
+    return filtered_papers
+
+def analyze_paper_with_gemini(paper):
+    """
+    Gemini를 사용하여 논문의 관련도를 평가하고 요약합니다.
+    API 쿼터 소진 시, 자동으로 다음 모델로 전환하여 재시도합니다.
+    """
+    global current_model_index # 전역 변수인 모델 인덱스를 수정하기 위해 선언
+
+    prompt = f"""
+You are an AI assistant for a researcher. Your task is to analyze a paper and provide two outputs: a relevance decision and a concise summary.
+
+**My Research Area:**
+"{MY_RESEARCH_AREA}"
+
+**Paper Title:** {paper['title']}
+**Paper Abstract:** {paper['abstract']}
+
+**Instructions:**
+1.  **Analyze Relevance:** First, evaluate if the paper's contribution is directly relevant to my research area.
+2.  **Summarize:** Second, summarize the abstract into exactly two clear and informative sentences.
+3.  **Format Output:** You MUST provide your response in the following format, using "|||" as a separator. Do not include any other text, explanations, or introductory phrases.
+
+**Output Format:**
+[Your two-sentence summary here.]||| [Yes. or No.]
+"""
+
+    # 사용 가능한 모델이 남아있는 동안 재시도
+    while current_model_index < len(MODEL_LIST):
+        model_to_use = MODEL_LIST[current_model_index]
+        print(f"    - Gemini 분석 시도 (모델: {model_to_use})")
+
+        try:
+            # API 호출
+            response = client.generate_content(model=model_to_use, contents=prompt)
+
+            # 응답 처리
+            if response.text and '|||' in response.text:
+                parts = response.text.strip().split('|||')
+                if len(parts) == 2:
+                    summary = parts[0].strip()
+                    answer_part = parts[1].strip().lower()
+                    if "yes" in answer_part:
+                        return "Related", summary
+                    elif "no" in answer_part:
+                        return "Unrelated", summary
+
+            # 예상치 못한 형식의 응답일 경우
+            print(f"    ⚠️ Gemini가 예상치 못한 형식으로 답변: {response.text}...")
+            return None, None
+
+        except Exception as e:
+            error_message = str(e).lower()
+            # 쿼터 소진 에러인지 확인
+            if "resource_exhausted" in error_message or "exceeded your current quota" in error_message:
+                print(f"    ⚠️ 모델 '{model_to_use}'의 API 쿼터 소진. 다음 모델로 전환합니다.")
+                current_model_index += 1 # 다음 모델을 사용하기 위해 인덱스 증가
+                time.sleep(2) # 잠시 대기 후 다음 모델로 재시도
+                continue # while 루프의 다음 순회로 넘어감
+            else:
+                # 쿼터 소진이 아닌 다른 에러일 경우
+                print(f"    ❌ Gemini API 호출 중 예상치 못한 오류 발생: {e}")
+                return None, None # 분석 중단
+
+    # 모든 모델의 쿼터를 소진한 경우
+    print("    ❌ 사용 가능한 모든 Gemini 모델의 쿼터를 소진했습니다. 분석을 중단합니다.")
+    return None, None
+
+# ✅ Notion에 논문 추가 (변경 없음 - 이미 요약본을 받도록 설계됨)
+def add_to_notion(paper, related_status):
+    """논문 정보, 관련도 상태, 발행일을 Notion에 추가합니다."""
+    url = "https://api.notion.com/v1/pages"
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28"
+    }
+
+    # ✨ arXiv의 'updated' 날짜(예: 2025-07-02T10:00:00Z)에서 'YYYY-MM-DD' 부분만 추출
+    updated_str = paper['updated_str'].split('T')[0]
+
+    properties = {
+        "Paper": {"title": [{"text": {"content": paper['title']}}]},
+        "Abstract": {"rich_text": [{"text": {"content": paper.get('abstract', '')}}]},
+        "Author": {"rich_text": [{"text": {"content": paper.get('author', 'arXiv')}}]},
+        "Relatedness": {"select": {"name": related_status}},
+        "url": {"url": paper['link']},
+        # ✨ 'Date' 속성에 추출한 날짜를 추가하는 부분
+        "Date": {
+            "date": {
+                "start": updated_str
+            }
+        }
+    }
+
+    data = {
+        "parent": {"database_id": DATABASE_ID},
+        "properties": properties
+    }
+
+    try:
+        res = requests.post(url, headers=headers, json=data, timeout=10)
+        # 성공(200)이든 실패든 응답 내용을 출력하도록 수정
+        print(f"📄 Notion 응답: {res.status_code}")
+        print(res.text) # Notion이 보내준 상세 응답 내용 확인
+
+        if res.status_code == 200:
+            print(f"✅ Notion 등록 성공: {paper['title'][:60]}... (상태: {related_status})")
+        else:
+            print(f"❌ Notion 등록 실패: {paper['title'][:60]}...")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Notion API 요청 실패: {paper['title'][:60]}... | {e}")
+
+
+def main():
+    """메인 스크립트 실행 함수"""
+    print("🚀 논문 자동화 스크립트를 시작합니다.")
+
+    # 1. Notion DB에서 기존 논문 목록 가져오기
+    print("\n[1/4] 📚 Notion DB에서 기존 논문 목록 가져오는 중...")
+    existing_titles = fetch_existing_titles()
+    print(f"총 {len(existing_titles)}개의 논문이 Notion에 존재합니다.")
+
+    # 2. arXiv에서 신규 논문 검색 및 필터링
+    print("\n[2/4] 🔍 arXiv에서 신규 논문 검색 및 필터링 중...")
+    arxiv_papers = fetch_arxiv_papers()
+    print(f"👍 날짜/주제 필터 통과한 논문 수: {len(arxiv_papers)}")
+
+    # 3. Gemini 필터링 및 최종 중복 검사
+    final_papers_to_add = []
+    if arxiv_papers:
+        print("\n[3/4] 🤖 Gemini 관련도 분석 및 초록 요약 시작...")
+        new_papers = []
+        for paper in arxiv_papers:
+            # ✨ 공백 정규화된 제목으로 중복 검사
+            if paper['title'] not in existing_titles:
+                new_papers.append(paper)
+
+        print(f"중복을 제외한 신규 논문 {len(new_papers)}개를 분석합니다.")
+
+        for i, paper in enumerate(new_papers):
+            print(f"({i+1}/{len(new_papers)}) 🔬 Gemini 분석 중: {paper['title'][:60]}...")
+            # ✨ Gemini 함수가 이제 2개의 값을 반환 (상태, 요약본)
+            related_status, summarized_abstract = analyze_paper_with_gemini(paper)
+
+            if related_status and summarized_abstract:
+                # ✨ paper 객체의 abstract를 요약본으로 교체
+                paper['abstract'] = summarized_abstract
+                final_papers_to_add.append((paper, related_status))
+                print(f"👍 Gemini 분석 완료! (상태: {related_status})")
+            else:
+                print(f"👎 Gemini 분석 실패. 이 논문은 등록되지 않습니다.")
+            time.sleep(1) # Gemini API 과호출 방지
+
+    # 4. 최종 목록을 Notion에 추가
+    print(f"\n[4/4] 📝 Notion DB에 최종 논문 등록 시작...")
+    if not final_papers_to_add:
+        print("✨ 새로 추가할 논문이 없습니다.")
+    else:
+        print(f"총 {len(final_papers_to_add)}개의 새로운 논문을 Notion에 추가합니다.")
+        for paper, status in final_papers_to_add:
+            add_to_notion(paper, status)
+            time.sleep(0.5) # Notion API 속도 제한 고려
+
+    print("\n🎉 모든 작업이 완료되었습니다!")
+
+
+if __name__ == "__main__":
+    main()

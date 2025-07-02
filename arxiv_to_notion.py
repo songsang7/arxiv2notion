@@ -185,7 +185,6 @@ def analyze_paper_with_gemini(paper):
                     types.Part.from_bytes(data=doc_data, mime_type='application/pdf'),
                     prompt
                 ],
-                generation_config=generation_config
             )
 
             if response.text and '|||' in response.text:

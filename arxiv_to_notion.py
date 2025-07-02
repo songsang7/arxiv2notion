@@ -225,7 +225,9 @@ def analyze_paper_with_gemini(paper):
 
         except Exception as e:
             if "overload" in str(e).lower():
+                print(f"  ⏳ 모델 '{model_to_use}' 과부하. 30초 후 재시도합니다.")
                 time.sleep(30)
+                continue
             else:
                 if "resource_exhausted" in str(e).lower() or "quota" in str(e).lower():
                     print(f"  ⚠️ 모델 '{model_to_use}'의 API 쿼터 소진. 다음 모델로 전환합니다.")

@@ -175,7 +175,7 @@ def analyze_paper_with_gemini(paper):
             response = client.models.generate_content(
                 model = model_to_use,
                 contents=[
-                    types.Part.from_data(
+                    types.Part.from_bytes(
                         data=doc_data,
                         mime_type='application/pdf',
                     ),

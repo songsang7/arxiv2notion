@@ -220,13 +220,16 @@ def analyze_paper_with_gemini(paper):
             return None, None
 
         except Exception as e:
-            if "resource_exhausted" in str(e).lower() or "quota" in str(e).lower():
-                print(f"  ⚠️ 모델 '{model_to_use}'의 API 쿼터 소진. 다음 모델로 전환합니다.")
-                current_model_index += 1
-                time.sleep(2)
+            if "overload" in str(e).lower():
+                time.sleep(30)
             else:
-                print(f"  ❌ Gemini API 호출 중 예상치 못한 오류 발생: {e}")
-                return None, None
+                if "resource_exhausted" in str(e).lower() or "quota" in str(e).lower():
+                    print(f"  ⚠️ 모델 '{model_to_use}'의 API 쿼터 소진. 다음 모델로 전환합니다.")
+                    current_model_index += 1
+                    time.sleep(2)
+                else:
+                    print(f"  ❌ Gemini API 호출 중 예상치 못한 오류 발생: {e}")
+                    return None, None
 
     print("  ❌ 사용 가능한 모든 Gemini 모델의 쿼터를 소진했습니다.")
     return None, None
@@ -263,7 +266,7 @@ def add_to_notion(paper, related_status, summary_parts):
     data = {"parent": {"database_id": DATABASE_ID}, "properties": properties}
 
     try:
-        res = requests.post(url, headers=headers, json=json.dumps(data), timeout=15)
+        res = requests.post(url, headers=headers, json=data, timeout=15)
         if res.status_code == 200:
             print(f"✅ Notion 등록 성공: {paper['title'][:60]}... (상태: {related_status})")
         else:

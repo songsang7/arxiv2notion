@@ -14,7 +14,7 @@ Arxiv2Notion is an automated tool that searches for newly published papers on [a
 
 - **Smart Filtering:**
   Uses **Google Gemini models** to:
-  - **Summarize abstracts**
+  - **Summarize paper**
   - **Determine relevance** to your research (`Related` / `Unrelated`)
 
 - **Duplicate Handling:**

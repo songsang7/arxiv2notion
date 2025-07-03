@@ -52,6 +52,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 | `LOOKBACK_DAYS`    | How many days back from today to search on arXiv                  |
 | `KEYWORDS`         | List of keywords to search for                                    |
 | `MY_RESEARCH_AREA` | A short description of your research area (used to check relevance) |
+| `ALLOWED_SUBJECTS` | As of now, we are using {"cs.CL"(NLP), "cs.AI"(ML), "cs.LG"(ML)} [refer to much more category](https://arxiv.org/category_taxonomy)|
 
 ---
 

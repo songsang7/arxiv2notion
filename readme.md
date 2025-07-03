@@ -77,7 +77,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 
 ## 🛠 Setup Instructions
 
-0. After issuing `Notion_TOKEN`, [link your api with your notion page that your database table exists](https://developers.notion.com/docs/create-a-notion-integration)(refer to   `Give your integration page permissions Section` in link)
+0. After issuing `Notion_TOKEN`, [link your api with your notion page that your database table exists](https://developers.notion.com/docs/create-a-notion-integration)(refer to   `Give your integration page permissions` Section in link)
 1. **Fork/clone** this repository.
 2. Set the following secrets in **GitHub → Settings → Secrets and variables → Actions**:
    - `NOTION_TOKEN`
@@ -85,7 +85,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
    - `GOOGLE_API_KEY`
 3. Modify `KEYWORDS`, `LOOKBACK_DAYS`, and `MY_RESEARCH_AREA` in `arxiv_to_notion.py`.
 4. That's it! The script will run daily via GitHub Actions.
-5. You should add each colum in your database table(in your page) in advance by manually(`Paper`, `Abstract`, `Relatedness`, ... `Results`)
+5. Afterward, you should add each colum in your database table(in your page) with appropriate property type by manually(`Paper`, `Abstract`, `Relatedness`, ... `Results`)
 ---
 
 ## 📅 Scheduling

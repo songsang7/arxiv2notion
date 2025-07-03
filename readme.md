@@ -35,11 +35,12 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 ### 🔐 GitHub Secrets
 - You should register these 3 parameters in `Settings -> Secrets and variables -> New repository secret`
 - How to get your database ID? ([Eng](https://stackoverflow.com/questions/67728038/where-to-find-database-id-for-my-database-in-notion)) | ([Kor](https://nyukist.tistory.com/16))
+- How to get notion token? ([Eng](https://developers.notion.com/docs/create-a-notion-integration)) | ([Kor](https://newdeal123.tistory.com/86))
 
 
 | Name                  | Description                          |
 |-----------------------|--------------------------------------|
-| `NOTION_TOKEN`        | Your Notion integration token        |
+| `NOTION_TOKEN`        | Your Notion integration token(==Notion API token)|
 | `DATABASE_ID`         | Target Notion database ID            |
 | `GOOGLE_API_KEY`      | Google Gemini API key (free or paid) |
 

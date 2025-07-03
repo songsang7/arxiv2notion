@@ -77,6 +77,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 
 ## 🛠 Setup Instructions
 
+0. After issuing `Notion_TOKEN` [link your api with your notion page that your database table exists(refer the Give your integration page permissions Section in link](https://developers.notion.com/docs/create-a-notion-integration)
 1. **Fork/clone** this repository.
 2. Set the following secrets in **GitHub → Settings → Secrets and variables → Actions**:
    - `NOTION_TOKEN`

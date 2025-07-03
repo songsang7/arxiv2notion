@@ -26,7 +26,7 @@ Arxiv2Notion is an automated tool that searches for newly published papers on [a
 
 - The following Gemini models are used in sequence to support higher request rates (up to 45 RPM or 1550 RPD depending on your tier):
 - Supporting model as of now: [`gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-2.5-flash-lite-preview-06-17`]
-- It autimatically changes the modelname based on the daily quota in order.
+- It automatically changes a model based on the daily quota in order.
 
 ---
 

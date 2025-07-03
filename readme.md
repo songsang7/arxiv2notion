@@ -56,21 +56,21 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 ---
 
 ## 🗃️ Notion Table Structure
+- You should consider property type when you add column in your database table.
 
-| Column     | Description                                   |
-|------------|-----------------------------------------------|
-| `Paper`    | Title of the paper                            |
-| `Abstract`  | Full abstract (via Gemini)               |
-| `Relatedness`  | Whether the paper is related to your research |
-| `Date`| Publication date on arXiv                     |
-| `URL`      | Direct link to the arXiv paper                |
-| `Author`   | Authors of the paper                        |
-| `Motivation`   | Motivation of the paper                        |
-| `Differences from Prior Work`   | Differences from Prior Work of the paper                        |
-| `Contributions and Novelty`   | Contributions and Novelty of the paper                        |
-| `Proposed Method`   | Proposed Method of the paper                        |
-| `Results`   | Results of the paper                        |
-
+| Column Name                   | Property Type | Description                                      |
+|------------------------------|----------------|--------------------------------------------------|
+| Paper                        | title          | Title of the paper                              |
+| Abstract                     | text           | Full abstract (via Gemini)                      |
+| Relatedness                  | select         | Whether the paper is related to your research   |
+| Date                         | date           | Publication date on arXiv                       |
+| URL                          | url            | Direct link to the arXiv paper                  |
+| Author                       | text           | Authors of the paper                            |
+| Motivation                   | text           | Motivation of the paper                         |
+| Differences from Prior Work  | text           | Differences from Prior Work                     |
+| Contributions and Novelty    | text           | Contributions and Novelty                       |
+| Proposed Method              | text           | Proposed Method of the paper                    |
+| Results                      | text           | Results of the paper                            |
 
 
 ---

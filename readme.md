@@ -33,6 +33,9 @@ The following Gemini models are used in sequence to support higher request rates
 The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 
 ### 🔐 GitHub Secrets
+- You should register these 3 parameters in `Settings -> Secrets and variables -> New repository secret`
+- How to get your database ID? ([Eng](https://stackoverflow.com/questions/67728038/where-to-find-database-id-for-my-database-in-notion)) | ([Kor](https://nyukist.tistory.com/16))
+
 
 | Name                  | Description                          |
 |-----------------------|--------------------------------------|
@@ -41,6 +44,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 | `GOOGLE_API_KEY`      | Google Gemini API key (free or paid) |
 
 ### 🛠 Script Parameters
+- You should change these parameters in `arxiv_to_notion.py` file.
 
 | Parameter          | Description                                                       |
 |--------------------|-------------------------------------------------------------------|

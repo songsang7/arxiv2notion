@@ -84,7 +84,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
    - `DATABASE_ID`
    - `GOOGLE_API_KEY`
 3. Modify `KEYWORDS`, `LOOKBACK_DAYS`, and `MY_RESEARCH_AREA` in `arxiv_to_notion.py`.
-4. Afterward, you should add each colum in your database table(in your page) with appropriate property type by manually.(`Paper`, `Abstract`, `Relatedness`, ... `Results`)
+4. Go to your notion page, then you should manually add each colum in your database table(in your page) with appropriate property type.(`Paper`, `Abstract`, `Relatedness`, ... `Results`)
 5. That's it! The script will run daily via GitHub Actions.
 
 ---

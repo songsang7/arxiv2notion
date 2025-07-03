@@ -60,11 +60,17 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
 | Column     | Description                                   |
 |------------|-----------------------------------------------|
 | `Paper`    | Title of the paper                            |
-| `Abstract`  | Shortened abstract (via Gemini)               |
+| `Abstract`  | Full abstract (via Gemini)               |
 | `Relatedness`  | Whether the paper is related to your research |
 | `Date`| Publication date on arXiv                     |
 | `URL`      | Direct link to the arXiv paper                |
 | `Author`   | Authors of the paper                        |
+| `Motivation`   | Motivation of the paper                        |
+| `Differences from Prior Work`   | Differences from Prior Work of the paper                        |
+| `Contributions and Novelty`   | Contributions and Novelty of the paper                        |
+| `Proposed Method`   | Proposed Method of the paper                        |
+| `Results`   | Results of the paper                        |
+
 
 
 ---
@@ -78,7 +84,7 @@ The script can be configured via `arxiv_to_notion.py` and GitHub Action secrets.
    - `GOOGLE_API_KEY`
 3. Modify `KEYWORDS`, `LOOKBACK_DAYS`, and `MY_RESEARCH_AREA` in `arxiv_to_notion.py`.
 4. That's it! The script will run daily via GitHub Actions.
-
+5. You should add each colum in database in advance by manually(Paper, Abstract, Relatedness, ... Results)
 ---
 
 ## 📅 Scheduling

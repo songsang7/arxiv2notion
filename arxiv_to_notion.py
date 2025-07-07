@@ -260,7 +260,7 @@ def add_to_notion(paper, related_status, summary_parts):
         "Abstract": {"rich_text": [{"text": {"content": paper.get('abstract', '')}}]}, # 원본 초록 저장
         "Author": {"rich_text": [{"text": {"content": paper.get('author', 'arXiv')}}]},
         "Relatedness": {"select": {"name": related_status}},
-        "url": {"url": paper['link']},
+        "URL": {"url": paper['link']},
         "Date": {"date": {"start": updated_str}},
         # --- 분할된 요약 추가 ---
         "Motivation": {"rich_text": [{"text": {"content": summary_parts.get('MOTIVATION', 'N/A')}}]},

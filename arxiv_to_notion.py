@@ -15,18 +15,13 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 # ✅ Hard-code non-secret configurations directly in the script
 KEYWORDS = [
-    "audio language model",
-    "speech language model",
-    "speech style",
-    "spoken language model",
-    "speech to speech",
-    "audio to speech",
-    "Omni",
-    "voice assistant",
-    "Audio LLM"
+    "reinforcement learning",
+    "homography estimation",
+    "self supervised learning",
+    "unsupervised learning",
   ]
-ALLOWED_SUBJECTS = {"cs.CL", "cs.AI", "cs.LG"}
-MY_RESEARCH_AREA = "My research focuses on developing virtual agents that understand user situations by jointly reasoning over user speech and ambient sounds as multimodal input, with a particular emphasis on generating speech with diverse styles using audio language models."
+ALLOWED_SUBJECTS = {"cs.CV", "cs.AI", "cs.LG", "cs.CG"}
+MY_RESEARCH_AREA = "내 연구는 강화학습이나 비지도 학습 또는 자기지도학습 처럼 ground truth를 크게 요구하지 않는 연구가 중심이야. 응용분야는 주로 컴퓨터 비전분야에 응용하는 것을 선호하지만, 꼭 비전이 아니더라도 로봇제어와 같은 분야로도 응용하는 것에 관심이 있어."
 LOOKBACK_DAYS = 60
 
 # Basic check to ensure secrets were loaded

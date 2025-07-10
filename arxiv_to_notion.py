@@ -22,7 +22,7 @@ KEYWORDS = [
   ]
 ALLOWED_SUBJECTS = {"cs.CV", "cs.AI", "cs.LG", "cs.CG"}
 MY_RESEARCH_AREA = "내 연구는 강화학습이나 비지도 학습 또는 자기지도학습 처럼 ground truth를 크게 요구하지 않는 연구가 중심이야. 응용분야는 주로 컴퓨터 비전분야에 응용하는 것을 선호하지만, 꼭 비전이 아니더라도 로봇제어와 같은 분야로도 응용하는 것에 관심이 있어."
-LOOKBACK_DAYS = 60
+LOOKBACK_DAYS = 5
 
 # Basic check to ensure secrets were loaded
 if not all([NOTION_TOKEN, DATABASE_ID, GOOGLE_API_KEY]):
